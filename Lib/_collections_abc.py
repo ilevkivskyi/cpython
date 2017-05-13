@@ -688,6 +688,14 @@ class Mapping(Collection):
 
     __reversed__ = None
 
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is Mapping:
+            return _check_methods(C, '__len__', '__getitem__', '__iter__',
+                                  '__contains__', 'items', 'keys', 'values',
+                                  'get')
+        return NotImplemented
+
 Mapping.register(mappingproxy)
 
 
@@ -856,6 +864,15 @@ class MutableMapping(Mapping):
             self[key] = default
         return default
 
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is MutableMapping:
+            return _check_methods(C, '__len__', '__getitem__', '__iter__',
+                                  '__contains__', '__setitem__', '__delitem__',
+                                  'items', 'keys', 'values', 'get', 'clear',
+                                  'pop', 'popitem', 'update', 'setdefault')
+        return NotImplemented
+
 MutableMapping.register(dict)
 
 
@@ -919,6 +936,14 @@ class Sequence(Reversible, Collection):
     def count(self, value):
         'S.count(value) -> integer -- return number of occurrences of value'
         return sum(1 for v in self if v is value or v == value)
+
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is Sequence:
+            return _check_methods(C, '__len__', '__getitem__', '__iter__',
+                                  '__contains__', '__reversed__', 'count',
+                                  'index')
+        return NotImplemented
 
 Sequence.register(tuple)
 Sequence.register(str)
@@ -1003,6 +1028,16 @@ class MutableSequence(Sequence):
     def __iadd__(self, values):
         self.extend(values)
         return self
+
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is MutableSequence:
+            return _check_methods(C, '__len__', '__getitem__', '__iter__',
+                                  '__contains__', '__reversed__', '__setitem__',
+                                  '__delitem__', '__iadd__', 'count', 'index',
+                                  'extend', 'insert', 'append', 'remove', 'pop',
+                                  'reverse', 'clear')
+        return NotImplemented
 
 MutableSequence.register(list)
 MutableSequence.register(bytearray)  # Multiply inheriting, see ByteString

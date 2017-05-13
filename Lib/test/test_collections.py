@@ -1504,6 +1504,44 @@ class TestCollectionABCs(ABCTestCase):
         self.validate_comparison(MyMapping())
         self.assertRaises(TypeError, reversed, MyMapping())
 
+    def test_Mappings_structural(self):
+        class MyMap:
+            def __len__(self):
+                return 0
+            def __getitem__(self, i):
+                raise KeyError
+            def __iter__(self):
+                return iter(())
+            def __contains__(self, i):
+                return False
+            def items(self):
+                return {}.items()
+            def keys(self):
+                return {}.keys()
+            def values(self):
+                return {}.values()
+            def get(self, i, default=None):
+                return default
+        class MyMutMap(MyMap):
+            def __setitem__(self, i, v):
+                pass
+            def __delitem__(self, i):
+                raise KeyError
+            def clear(self):
+                pass
+            def pop(self, i, default=None):
+                return default
+            def popitem(self):
+                raise KeyError
+            def update(self, mapping=None):
+                pass
+            def setdefault(self, i, default=None):
+                return default
+        self.assertIsInstance(MyMap(), Mapping)
+        self.assertNotIsInstance(MyMap(), MutableMapping)
+        self.assertIsInstance(MyMutMap(), Mapping)
+        self.assertIsInstance(MyMutMap(), MutableMapping)
+
     def test_MutableMapping(self):
         for sample in [dict]:
             self.assertIsInstance(sample(), MutableMapping)
@@ -1547,6 +1585,48 @@ class TestCollectionABCs(ABCTestCase):
         self.assertTrue(issubclass(str, Sequence))
         self.validate_abstract_methods(Sequence, '__contains__', '__iter__', '__len__',
             '__getitem__')
+
+    def test_Seuqences_structural(self):
+        class MySeq:
+            def __len__(self):
+                return 0
+            def __getitem__(self, i):
+                raise IndexError
+            def __iter__(self):
+                return iter(())
+            def __reversed__(self):
+                return iter(())
+            def __contains__(self, i):
+                return False
+            def count(self, i):
+                return 0
+            def index(self, i, start=0, end=0):
+                raise ValueError
+        class MyMutSeq(MySeq):
+            def __setitem__(self, i, v):
+                pass
+            def __delitem__(self, i):
+                raise IndexError
+            def __iadd__(self, other):
+                pass
+            def append(self, i):
+                pass
+            def extend(self, seq):
+                pass
+            def insert(self, i, v):
+                pass
+            def remove(self, v):
+                raise ValueError
+            def pop(self, i, default=None):
+                return default
+            def reverse(self):
+                pass
+            def clear(self):
+                pass
+        self.assertIsInstance(MySeq(), Sequence)
+        self.assertNotIsInstance(MySeq(), MutableSequence)
+        self.assertIsInstance(MyMutSeq(), Sequence)
+        self.assertIsInstance(MyMutSeq(), MutableSequence)
 
     def test_Sequence_mixins(self):
         class SequenceSubclass(Sequence):
