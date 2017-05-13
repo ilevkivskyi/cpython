@@ -155,6 +155,9 @@ ABC                        Inherits from          Abstract Methods        Mixin 
    .. versionchanged:: 3.5
       The index() method added support for *stop* and *start*
       arguments.
+   .. versionchanged:: 3.7
+      Added structural instance and subclass checks for :class:`Sequence` and
+      :class:`MutableSequence`.
 
 .. class:: Set
            MutableSet
@@ -165,6 +168,9 @@ ABC                        Inherits from          Abstract Methods        Mixin 
            MutableMapping
 
    ABCs for read-only and mutable :term:`mappings <mapping>`.
+
+   .. versionchanged:: 3.7
+      Added structural instance and subclass checks.
 
 .. class:: MappingView
            ItemsView
