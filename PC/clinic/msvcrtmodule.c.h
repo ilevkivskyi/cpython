@@ -43,7 +43,7 @@ static PyObject *
 msvcrt_locking_impl(PyObject *module, int fd, int mode, long nbytes);
 
 static PyObject *
-msvcrt_locking(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kwnames)
+msvcrt_locking(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     PyObject *return_value = NULL;
     int fd;
@@ -52,10 +52,6 @@ msvcrt_locking(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kw
 
     if (!_PyArg_ParseStack(args, nargs, "iil:locking",
         &fd, &mode, &nbytes)) {
-        goto exit;
-    }
-
-    if (!_PyArg_NoStackKeywords("locking", kwnames)) {
         goto exit;
     }
     return_value = msvcrt_locking_impl(module, fd, mode, nbytes);
@@ -82,7 +78,7 @@ static long
 msvcrt_setmode_impl(PyObject *module, int fd, int flags);
 
 static PyObject *
-msvcrt_setmode(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kwnames)
+msvcrt_setmode(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     PyObject *return_value = NULL;
     int fd;
@@ -91,10 +87,6 @@ msvcrt_setmode(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kw
 
     if (!_PyArg_ParseStack(args, nargs, "ii:setmode",
         &fd, &flags)) {
-        goto exit;
-    }
-
-    if (!_PyArg_NoStackKeywords("setmode", kwnames)) {
         goto exit;
     }
     _return_value = msvcrt_setmode_impl(module, fd, flags);
@@ -124,7 +116,7 @@ static long
 msvcrt_open_osfhandle_impl(PyObject *module, intptr_t handle, int flags);
 
 static PyObject *
-msvcrt_open_osfhandle(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kwnames)
+msvcrt_open_osfhandle(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     PyObject *return_value = NULL;
     intptr_t handle;
@@ -133,10 +125,6 @@ msvcrt_open_osfhandle(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObj
 
     if (!_PyArg_ParseStack(args, nargs, ""_Py_PARSE_INTPTR"i:open_osfhandle",
         &handle, &flags)) {
-        goto exit;
-    }
-
-    if (!_PyArg_NoStackKeywords("open_osfhandle", kwnames)) {
         goto exit;
     }
     _return_value = msvcrt_open_osfhandle_impl(module, handle, flags);
@@ -442,7 +430,7 @@ static long
 msvcrt_CrtSetReportFile_impl(PyObject *module, int type, int file);
 
 static PyObject *
-msvcrt_CrtSetReportFile(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kwnames)
+msvcrt_CrtSetReportFile(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     PyObject *return_value = NULL;
     int type;
@@ -451,10 +439,6 @@ msvcrt_CrtSetReportFile(PyObject *module, PyObject **args, Py_ssize_t nargs, PyO
 
     if (!_PyArg_ParseStack(args, nargs, "ii:CrtSetReportFile",
         &type, &file)) {
-        goto exit;
-    }
-
-    if (!_PyArg_NoStackKeywords("CrtSetReportFile", kwnames)) {
         goto exit;
     }
     _return_value = msvcrt_CrtSetReportFile_impl(module, type, file);
@@ -486,7 +470,7 @@ static long
 msvcrt_CrtSetReportMode_impl(PyObject *module, int type, int mode);
 
 static PyObject *
-msvcrt_CrtSetReportMode(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kwnames)
+msvcrt_CrtSetReportMode(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     PyObject *return_value = NULL;
     int type;
@@ -495,10 +479,6 @@ msvcrt_CrtSetReportMode(PyObject *module, PyObject **args, Py_ssize_t nargs, PyO
 
     if (!_PyArg_ParseStack(args, nargs, "ii:CrtSetReportMode",
         &type, &mode)) {
-        goto exit;
-    }
-
-    if (!_PyArg_NoStackKeywords("CrtSetReportMode", kwnames)) {
         goto exit;
     }
     _return_value = msvcrt_CrtSetReportMode_impl(module, type, mode);
@@ -589,4 +569,4 @@ exit:
 #ifndef MSVCRT_SET_ERROR_MODE_METHODDEF
     #define MSVCRT_SET_ERROR_MODE_METHODDEF
 #endif /* !defined(MSVCRT_SET_ERROR_MODE_METHODDEF) */
-/*[clinic end generated code: output=be516d0e78532ba3 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=8e9e57c48c4defcc input=a9049054013a1b77]*/
