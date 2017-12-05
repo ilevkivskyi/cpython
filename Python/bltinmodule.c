@@ -46,14 +46,86 @@ _Py_IDENTIFIER(stderr);
 
 #include "clinic/bltinmodule.c.h"
 
+static PyObject*
+update_bases(PyObject* bases, PyObject** args, int nargs, int* modified_bases)
+{
+    int i, j, ind, tot_extra = 0;
+    PyObject *base, *meth, *new_base, *new_sub_base, *new_bases;
+    PyObject *stack[1] = {bases};
+    assert(PyTuple_Check(bases));
+
+    /* We have a separate cycle to calculate replacements with the idea that in
+       most cases we just scroll quickly though it and return original bases */
+    for (i = 2; i < nargs; i++){
+        base  = args[i];
+        if (PyType_Check(base)) {
+            continue;
+        }
+        if (!(meth = PyObject_GetAttrString(base, "__mro_entries__"))) {
+            if (!PyErr_ExceptionMatches(PyExc_AttributeError)) {
+                return NULL;
+            }
+            PyErr_Clear();
+            continue;
+        }
+        if (!PyCallable_Check(meth)) {
+            PyErr_SetString(PyExc_TypeError,
+                            "__mro_entries__ must be callable");
+            Py_DECREF(meth);
+            return NULL;
+        }
+        if (!(new_base = _PyObject_FastCall(meth, stack, 1))){
+            Py_DECREF(meth);
+            return NULL;
+        }
+        if (PyTuple_Check(new_base)) {
+            tot_extra += PyTuple_Size(new_base) - 1;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "__mro_entries__ must return a tuple");
+            Py_DECREF(meth);
+            return NULL;
+        }
+        Py_DECREF(base);
+        args[i] = new_base;
+        *modified_bases = 1;
+        Py_DECREF(meth);
+    }
+    if (!*modified_bases){
+        return bases;
+    }
+    new_bases = PyTuple_New(nargs - 2 + tot_extra);
+    ind = 0;
+    for (i = 2; i < nargs; i++) {
+        new_base = args[i];
+        if (!PyTuple_Check(new_base)) {
+            Py_INCREF(new_base);
+            PyTuple_SET_ITEM(new_bases, ind, new_base);
+            ind++;
+        }
+        else {
+            for (j = 0; j < PyTuple_Size(new_base); j++) {
+                new_sub_base = PyTuple_GET_ITEM(new_base, j);
+                Py_INCREF(new_sub_base);
+                PyTuple_SET_ITEM(new_bases, ind, new_sub_base);
+                ind++;
+            }
+        }
+    }
+    return new_bases;
+}
+
 /* AC: cannot convert yet, waiting for *args support */
 static PyObject *
 builtin___build_class__(PyObject *self, PyObject **args, Py_ssize_t nargs,
                         PyObject *kwnames)
 {
     PyObject *func, *name, *bases, *mkw, *meta, *winner, *prep, *ns;
+    PyObject *new_bases, *old_bases = NULL;
     PyObject *cls = NULL, *cell = NULL;
     int isclass = 0;   /* initialize to prevent gcc warning */
+    int modified_bases = 0;
 
     if (nargs < 2) {
         PyErr_SetString(PyExc_TypeError,
@@ -75,6 +147,16 @@ builtin___build_class__(PyObject *self, PyObject **args, Py_ssize_t nargs,
     bases = _PyStack_AsTupleSlice(args, nargs, 2, nargs);
     if (bases == NULL)
         return NULL;
+
+    new_bases = update_bases(bases, args, nargs, &modified_bases);
+    if (new_bases == NULL) {
+        Py_DECREF(bases);
+        return NULL;
+    }
+    else {
+        old_bases = bases;
+        bases = new_bases;
+    }
 
     if (kwnames == NULL) {
         meta = NULL;
@@ -168,6 +250,9 @@ builtin___build_class__(PyObject *self, PyObject **args, Py_ssize_t nargs,
                              NULL, 0, NULL, 0, NULL, 0, NULL,
                              PyFunction_GET_CLOSURE(func));
     if (cell != NULL) {
+        if (modified_bases){
+            PyMapping_SetItemString(ns, "__orig_bases__", old_bases);
+        }
         PyObject *margs[3] = {name, bases, ns};
         cls = _PyObject_FastCallDict(meta, margs, 3, mkw);
         if (cls != NULL && PyType_Check(cls) && PyCell_Check(cell)) {
@@ -206,6 +291,9 @@ error:
     Py_DECREF(meta);
     Py_XDECREF(mkw);
     Py_DECREF(bases);
+    if (modified_bases) {
+        Py_DECREF(old_bases);
+    }
     return cls;
 }
 
@@ -1942,7 +2030,7 @@ builtin_input_impl(PyObject *module, PyObject *prompt)
     /* If we're interactive, use (GNU) readline */
     if (tty) {
         PyObject *po = NULL;
-        char *promptstr;
+        const char *promptstr;
         char *s = NULL;
         PyObject *stdin_encoding = NULL, *stdin_errors = NULL;
         PyObject *stdout_encoding = NULL, *stdout_errors = NULL;
@@ -2079,19 +2167,23 @@ builtin_repr(PyObject *module, PyObject *obj)
 }
 
 
-/* AC: cannot convert yet, as needs PEP 457 group support in inspect
- *     or a semantic change to accept None for "ndigits"
- */
-static PyObject *
-builtin_round(PyObject *self, PyObject *args, PyObject *kwds)
-{
-    PyObject *ndigits = NULL;
-    static char *kwlist[] = {"number", "ndigits", 0};
-    PyObject *number, *round, *result;
+/*[clinic input]
+round as builtin_round
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:round",
-                                     kwlist, &number, &ndigits))
-        return NULL;
+    number: object
+    ndigits: object = NULL
+
+Round a number to a given precision in decimal digits.
+
+The return value is an integer if ndigits is omitted or None.  Otherwise
+the return value has the same type as the number.  ndigits may be negative.
+[clinic start generated code]*/
+
+static PyObject *
+builtin_round_impl(PyObject *module, PyObject *number, PyObject *ndigits)
+/*[clinic end generated code: output=ff0d9dd176c02ede input=854bc3a217530c3d]*/
+{
+    PyObject *round, *result;
 
     if (Py_TYPE(number)->tp_dict == NULL) {
         if (PyType_Ready(Py_TYPE(number)) < 0)
@@ -2114,13 +2206,6 @@ builtin_round(PyObject *self, PyObject *args, PyObject *kwds)
     Py_DECREF(round);
     return result;
 }
-
-PyDoc_STRVAR(round_doc,
-"round(number[, ndigits]) -> number\n\
-\n\
-Round a number to a given precision in decimal digits (default 0 digits).\n\
-This returns an int when called with one argument, otherwise the\n\
-same type as the number. ndigits may be negative.");
 
 
 /*AC: we need to keep the kwds dict intact to easily call into the
@@ -2679,7 +2764,7 @@ static PyMethodDef builtin_methods[] = {
     BUILTIN_POW_METHODDEF
     {"print",           (PyCFunction)builtin_print,      METH_FASTCALL | METH_KEYWORDS, print_doc},
     BUILTIN_REPR_METHODDEF
-    {"round",           (PyCFunction)builtin_round,      METH_VARARGS | METH_KEYWORDS, round_doc},
+    BUILTIN_ROUND_METHODDEF
     BUILTIN_SETATTR_METHODDEF
     BUILTIN_SORTED_METHODDEF
     BUILTIN_SUM_METHODDEF

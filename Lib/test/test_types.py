@@ -844,6 +844,38 @@ class ClassCreationTests(unittest.TestCase):
         self.assertEqual(C.y, 1)
         self.assertEqual(C.z, 2)
 
+    def test_new_class_with_mro_entry(self):
+        class A: pass
+        class C:
+            def __mro_entries__(self, bases):
+                return (A,)
+        c = C()
+        D = types.new_class('D', (c,), {})
+        self.assertEqual(D.__bases__, (A,))
+        self.assertEqual(D.__orig_bases__, (c,))
+        self.assertEqual(D.__mro__, (D, A, object))
+
+    def test_new_class_with_mro_entry_none(self):
+        class A: pass
+        class B: pass
+        class C:
+            def __mro_entries__(self, bases):
+                return ()
+        c = C()
+        D = types.new_class('D', (A, c, B), {})
+        self.assertEqual(D.__bases__, (A, B))
+        self.assertEqual(D.__orig_bases__, (A, c, B))
+        self.assertEqual(D.__mro__, (D, A, B, object))
+
+    def test_new_class_with_mro_entry_error(self):
+        class A: pass
+        class C:
+            def __mro_entries__(self, bases):
+                return A
+        c = C()
+        with self.assertRaises(TypeError):
+            types.new_class('D', (c,), {})
+
     # Many of the following tests are derived from test_descr.py
     def test_prepare_class(self):
         # Basic test of metaclass derivation
@@ -885,6 +917,28 @@ class ClassCreationTests(unittest.TestCase):
                                     r'return a mapping, not NoneType$'):
             class Bar(metaclass=BadMeta()):
                 pass
+
+    def test_resolve_bases(self):
+        class A: pass
+        class B: pass
+        class C:
+            def __mro_entries__(self, bases):
+                if A in bases:
+                    return ()
+                return (A,)
+        c = C()
+        self.assertEqual(types.resolve_bases(()), ())
+        self.assertEqual(types.resolve_bases((c,)), (A,))
+        self.assertEqual(types.resolve_bases((C,)), (C,))
+        self.assertEqual(types.resolve_bases((A, C)), (A, C))
+        self.assertEqual(types.resolve_bases((c, A)), (A,))
+        self.assertEqual(types.resolve_bases((A, c)), (A,))
+        x = (A,)
+        y = (C,)
+        z = (A, C)
+        t = (A, C, B)
+        for bases in [x, y, z, t]:
+            self.assertIs(types.resolve_bases(bases), bases)
 
     def test_metaclass_derivation(self):
         # issue1294232: correct metaclass calculation
